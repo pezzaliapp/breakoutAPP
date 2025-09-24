@@ -1,10 +1,12 @@
 
-# 🎾 Breakout PWA — v10.1
+# 🎾 Breakout PWA — v10.3
 
-![App Icon](icons/icon-512.png)
+![Icona principale](icons/face.png)
 
 Una reinterpretazione **moderna e mobile-friendly** del classico **Breakout** (Atari, 1976).  
 Giocabile direttamente da browser o installabile come **Progressive Web App (PWA)** su iOS/Android.
+
+> Nota: l’icona in testata è la **faccia** usata nel *Face Brick* speciale. L’icona dell’app PWA resta quella con la **B** stilizzata.
 
 ---
 
@@ -18,9 +20,17 @@ Giocabile direttamente da browser o installabile come **Progressive Web App (PWA
 
 ---
 
+## 🖼️ Icone
+| Ruolo | Anteprima |
+|------|-----------|
+| **Icona App PWA** | ![App Icon](icons/icon-512.png) |
+| **Face Brick** | ![Face Brick](icons/face.png) |
+
+---
+
 ## 📂 Struttura del progetto
 ```
-breakout_v10_1/
+breakout_v10_2/
 ├── index.html
 ├── style.v10.css
 ├── app.v10.js
@@ -31,7 +41,7 @@ breakout_v10_1/
     ├── icon-192.png
     ├── icon-512.png
     ├── icon-1024.png
-    └── face.png   ← usata per il mattoncino speciale
+    └── face.png
 ```
 
 ---
@@ -62,3 +72,6 @@ breakout_v10_1/
 ## 📜 Licenza
 © 2025 pezzaliAPP — Open Source (MIT).  
 Ispirato all’originale **Breakout (Atari, 1976)**.
+
+
+**Novità v10.3**: fix bonus del Face Brick (+100, +1 LIFE garantito), popups aggiornati, icone PWA ufficiali con la tua faccia.
