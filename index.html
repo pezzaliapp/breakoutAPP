@@ -7,10 +7,10 @@
   <meta name="theme-color" content="#0b5fff" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="manifest" href="manifest.webmanifest?v=4" />
   <link rel="icon" href="icons/icon-192.png" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.v4.css" />
 </head>
 <body>
   <header class="topbar">
@@ -40,11 +40,11 @@
     </details>
   </footer>
 
-  <script src="app.js"></script>
+  <script src="app.v4.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch(console.warn);
+        navigator.serviceWorker.register('./sw-v4.js').catch(console.warn);
       });
     }
   </script>
