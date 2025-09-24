@@ -1,7 +1,7 @@
 {
   "name": "Breakout — pezzaliAPP",
   "short_name": "Breakout",
-  "start_url": "./index.html?v=8",
+  "start_url": "./index.html?v=10.1",
   "display": "standalone",
   "background_color": "#0b0e14",
   "theme_color": "#0b5fff",
@@ -14,6 +14,12 @@
     {
       "src": "icons/icon-512.png",
       "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-1024.png",
+      "sizes": "1024x1024",
       "type": "image/png",
       "purpose": "any maskable"
     }

@@ -1,30 +1,64 @@
 
-# 🎾 Breakout PWA (v8)
+# 🎾 Breakout PWA — v10.1
 
-Reinterpretazione mobile del classico **Breakout**, installabile come PWA.  
-**Novità v8:** un *mattoncino speciale* con la tua faccia: quando lo colpisci ottieni **+100 punti** e **+1 vita**.
+![App Icon](icons/icon-512.png)
 
-## Come funziona il Face Brick
-- In ogni livello, uno dei mattoni viene scelto casualmente come speciale.
-- La sua texture è `icons/face.png` (puoi sostituirla con una tua immagine quadrata).
-- Alla distruzione: +100 punti e +1 vita.
+Una reinterpretazione **moderna e mobile-friendly** del classico **Breakout** (Atari, 1976).  
+Giocabile direttamente da browser o installabile come **Progressive Web App (PWA)** su iOS/Android.
 
-## Struttura
+---
+
+## 🚀 Caratteristiche principali
+- **Controlli touch ottimizzati**: muovi la racchetta trascinando il dito nella fascia grigia *Area Touch*.
+- **HUD completo**: punteggio, vite, livello e record personale (`localStorage`).
+- **Face Brick speciale** 🎭: un mattone casuale con la tua immagine che si rompe al primo colpo e assegna **+100 punti** e **+1 LIFE**, con popup visivo e flash.
+- **Progressione dinamica**: velocità della palla che cresce con i livelli.
+- **Installabile offline**: manifest + service worker con cache versionata.
+- **Compatibile desktop**: tastiera (`← →` muovi, `Spazio` pausa, `R` restart, `F` fullscreen).
+
+---
+
+## 📂 Struttura del progetto
 ```
-index.html
-style.v8.css
-app.v8.js
-sw-v8.js
-manifest.webmanifest
-icons/
-  ├─ icon-192.png
-  ├─ icon-512.png
-  └─ face.png   ← immagine usata per il mattoncino speciale
+breakout_v10_1/
+├── index.html
+├── style.v10.css
+├── app.v10.js
+├── sw-v10-1.js
+├── manifest.webmanifest
+├── README.md
+└── icons/
+    ├── icon-192.png
+    ├── icon-512.png
+    ├── icon-1024.png
+    └── face.png   ← usata per il mattoncino speciale
 ```
 
-## Note
-- Se aggiorni i file, i nomi versionati e `start_url?v=6` aiutano a forzare l'update su iOS.
-- Controlli: *Area Touch* per muovere, tap sul canvas per pausa/continua, ↻ restart, ⛶ fullscreen.
+---
 
+## ▶️ Come giocare
+1. Apri la pagina pubblicata (GitHub Pages o server).
+2. **Muovi la racchetta**: trascina il dito nell’*Area Touch*.
+3. **Pausa/Continua**: tap sul canvas o pulsante ⏸/▶︎.
+4. **Restart**: pulsante ↻ o tasto `R`.
+5. **Fullscreen**: pulsante ⛶ o tasto `F`.
 
-- v8: aggiunto effetto **flash** e testo flottante `+100  +1 ❤` quando distruggi il Face Brick.
+---
+
+## 📲 Installazione su smartphone
+- **iOS (Safari)**: *Condividi → Aggiungi alla schermata Home*.
+- **Android (Chrome)**: *Aggiungi a Home screen*.
+- Dopo il primo caricamento la PWA funziona anche **offline**.
+
+---
+
+## 🛠️ Sviluppo
+- Codice in **vanilla JS**, nessuna libreria esterna.
+- HTML, CSS, JS, manifest e service worker totalmente locali.
+- Licenza **MIT**.
+
+---
+
+## 📜 Licenza
+© 2025 pezzaliAPP — Open Source (MIT).  
+Ispirato all’originale **Breakout (Atari, 1976)**.
