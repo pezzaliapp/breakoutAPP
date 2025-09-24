@@ -75,3 +75,9 @@ Ispirato all’originale **Breakout (Atari, 1976)**.
 
 
 **Novità v10.3**: fix bonus del Face Brick (+100, +1 LIFE garantito), popups aggiornati, icone PWA ufficiali con la tua faccia.
+
+
+**v10.4 (clean):** il Face Brick è solo estetico (nessun bonus), gioco stabile e fedele al classico.
+
+
+**v10.5:** Face Brick con solo bonus **+100 punti** (niente vite extra). Versione pulita e stabile.

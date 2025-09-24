@@ -1,7 +1,7 @@
 {
   "name": "Breakout — pezzaliAPP",
   "short_name": "Breakout",
-  "start_url": "./index.html?v=10.3",
+  "start_url": "./index.html?v=10.5",
   "display": "standalone",
   "background_color": "#0b0e14",
   "theme_color": "#0b5fff",

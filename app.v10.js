@@ -123,8 +123,7 @@
     // Seleziona un mattone casuale speciale (face)
     if(bricks.length>0){
       const idx = Math.floor(Math.random()*bricks.length);
-      bricks[idx].special = true;
-      bricks[idx].hp = 1;
+      bricks[idx].special = true; bricks[idx].hp = 1; // +100 bonus (solo punti)
       bricks[idx].hp = 1;
     }
     state.bricks = bricks;
