@@ -1,8 +1,8 @@
 
-# 🎾 Breakout PWA (v6)
+# 🎾 Breakout PWA (v7)
 
 Reinterpretazione mobile del classico **Breakout**, installabile come PWA.  
-**Novità v6:** un *mattoncino speciale* con la tua faccia: quando lo colpisci ottieni **+100 punti** e **+1 vita**.
+**Novità v7:** un *mattoncino speciale* con la tua faccia: quando lo colpisci ottieni **+100 punti** e **+1 vita**.
 
 ## Come funziona il Face Brick
 - In ogni livello, uno dei mattoni viene scelto casualmente come speciale.
@@ -12,9 +12,9 @@ Reinterpretazione mobile del classico **Breakout**, installabile come PWA.
 ## Struttura
 ```
 index.html
-style.v6.css
-app.v6.js
-sw-v6.js
+style.v7.css
+app.v7.js
+sw-v7.js
 manifest.webmanifest
 icons/
   ├─ icon-192.png
