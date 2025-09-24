@@ -18,34 +18,30 @@
     <div class="controls">
       <button id="btnPlayPause" aria-label="Play/Pause">▶︎</button>
       <button id="btnRestart" aria-label="Restart">↻</button>
-      <button id="btnSound" aria-label="Sound on/off">🔈</button>
-      <span id="hud">Score: <b id="score">0</b> • Lives: <b id="lives">3</b> • Best: <b id="best">0</b></span>
+      <button id="btnFull" aria-label="Fullscreen">⛶</button>
+      <span id="hud">Punti: <b id="score">0</b> • Vite: <b id="lives">3</b> • Livello: <b id="level">1</b> • Best: <b id="best">0</b></span>
     </div>
   </header>
 
   <main>
     <canvas id="game" aria-label="Gioco Breakout" role="img"></canvas>
-    <div id="touchZone" aria-hidden="true"></div>
+    <div id="touchZone" aria-hidden="true" title="Zona di controllo: trascina per muovere la racchetta"></div>
   </main>
 
   <footer class="foot">
     <details>
-      <summary>Info & comandi</summary>
-      <p>
-        Trascina il dito nella zona grigia per muovere la racchetta. Tocco singolo: pausa/continua.  
-        Tastiera (desktop): ← → per muovere, Spazio: pausa, R: restart.
-      </p>
-      <p class="about">
-        Breakout è un videogioco arcade creato in Atari e pubblicato il <strong>13 maggio 1976</strong>.  
-        Questa è una reinterpretazione moderna per smartphone, con PWA offline.
-      </p>
+      <summary>Info rapide</summary>
+      <ul>
+        <li>Trascina il dito nella zona grigia sotto per muovere la racchetta.</li>
+        <li>Tocco singolo sul canvas: Pausa/Continua. Pulsanti: ▶︎ / ↻ / ⛶.</li>
+        <li>Tastiera (desktop): ← → per muovere, Spazio: pausa, R: restart, F: fullscreen.</li>
+      </ul>
+      <p class="about">Breakout — reinterpretazione mobile-friendly. © 2025 pezzaliAPP — PWA offline-ready.</p>
     </details>
-    <p class="credits">© 2025 pezzaliAPP — Open source • PWA • Offline-ready</p>
   </footer>
 
   <script src="app.js"></script>
   <script>
-    // Registra il service worker (PWA)
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js').catch(console.warn);

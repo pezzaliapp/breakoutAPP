@@ -1,114 +1,122 @@
-/* Breakout per smartphone — pezzaliAPP (MIT) */
+// Breakout mobile-first — riscritto da zero (MIT)
 (() => {
+  'use strict';
+
+  // === DOM & HUD ===
   const cvs = document.getElementById('game');
   const ctx = cvs.getContext('2d');
   const zone = document.getElementById('touchZone');
   const btnPlayPause = document.getElementById('btnPlayPause');
   const btnRestart = document.getElementById('btnRestart');
-  const btnSound = document.getElementById('btnSound');
+  const btnFull = document.getElementById('btnFull');
   const elScore = document.getElementById('score');
   const elLives = document.getElementById('lives');
+  const elLevel = document.getElementById('level');
   const elBest = document.getElementById('best');
 
-  // Stato base
+  // === Stato di gioco ===
+  const GS = { MENU:0, PLAY:1, PAUSE:2, GAMEOVER:3 };
   const state = {
-    running: false,
-    width: 0, height: 0,
-    score: 0, lives: 3, best: Number(localStorage.getItem('brk_best')||0),
-    sound: true,
-    level: 1,
-    bricks: [],
-    ball: null,
-    paddle: null,
-    lastTs: 0
+    gs: GS.MENU,
+    width: 0, height: 0, // in pixel del canvas (hiDPI)
+    dpr: Math.max(1, Math.floor(window.devicePixelRatio || 1)),
+    score: 0, best: Number(localStorage.getItem('brk_best')||0),
+    lives: 3, level: 1,
+    paddle: null, ball: null, bricks: [],
+    lastTs: 0,
+    keyLeft: false, keyRight: false,
+    pointerActive: false, pointerX: 0
   };
   elBest.textContent = state.best;
 
-  // Audio super semplice (beep via WebAudio)
-  let audioCtx = null;
-  function beep(freq=600, dur=0.04, vol=0.1){
-    if(!state.sound) return;
-    if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
-    const o = audioCtx.createOscillator();
-    const g = audioCtx.createGain();
-    o.frequency.value = freq;
-    o.type = 'square';
-    g.gain.value = vol;
-    o.connect(g); g.connect(audioCtx.destination);
-    o.start();
-    setTimeout(()=>{ o.stop(); }, dur*1000);
+  // === Util ===
+  function clamp(v,min,max){ return v<min?min:v>max?max:v; }
+  function setHUD(){
+    elScore.textContent = state.score;
+    elLives.textContent = state.lives;
+    elLevel.textContent = state.level;
+    elBest.textContent = state.best;
   }
 
-  // Layout responsivo: canvas piena larghezza; altezza dinamica
+  // === Layout/Resize ===
   function resize(){
-    const maxW = Math.min(window.innerWidth, 720);
+    state.dpr = Math.max(1, Math.floor(window.devicePixelRatio || 1));
     const topH = document.querySelector('.topbar').offsetHeight;
-    const footerH = 150; // spazio per info + touch zone
-    let h = window.innerHeight - topH - footerH;
-    h = Math.max(360, Math.min(h, 900));
-    cvs.width = Math.floor(maxW * devicePixelRatio);
-    cvs.height = Math.floor(h * devicePixelRatio);
-    cvs.style.height = h + 'px';
+    const footerH = document.querySelector('.foot').offsetHeight || 100;
+    const zoneH = zone.getBoundingClientRect().height || 120;
+    const maxW = Math.min(window.innerWidth, 820);
+    let h = window.innerHeight - topH - zoneH - 24; // margine
+    h = clamp(h, 340, 980);
     cvs.style.width = maxW + 'px';
+    cvs.style.height = h + 'px';
+    cvs.width = Math.floor(maxW * state.dpr);
+    cvs.height = Math.floor(h * state.dpr);
     state.width = cvs.width; state.height = cvs.height;
-    initOrScale();
+    // Reinizializza mantenendo livello ma reset palla/paddle se serve
+    initLevel(state.level, true);
+    draw(); // frame statico
   }
   window.addEventListener('resize', resize);
   window.addEventListener('orientationchange', resize);
 
-  // Inizializza oggetti di gioco
-  function initLevel(level=1){
-    const W = state.width, H = state.height;
-    const px = v => Math.max(1, Math.round(v * devicePixelRatio));
+  // === Inizializzazione livello ===
+  function initLevel(level=1, keepScore=false){
+    const W = state.width, H = state.height, dpr = state.dpr;
+    const px = v => Math.max(1, Math.round(v * dpr));
+
+    if(!keepScore){
+      state.score = 0; state.lives = 3; state.level = level;
+      setHUD();
+    }
 
     // Paddle
-    const padW = px(Math.min(W*0.18, 160*devicePixelRatio));
-    const padH = px(10*devicePixelRatio);
+    const padW = clamp(Math.round(W*0.16), px(80), px(220));
+    const padH = px(10);
     state.paddle = {
       w: padW, h: padH,
       x: (W - padW)/2,
-      y: H - px(120*devicePixelRatio), // alto per lasciare spazio al pollice
-      vx: 0, speed: px(0.9*devicePixelRatio)
+      y: H - px(140), // spazio per pollice
+      speed: px(900) // px/s
     };
 
     // Ball
-    const ballR = px(6*devicePixelRatio);
+    const ballR = px(6);
+    const baseSpeed = px(520 + 30*(level-1)); // px/s
+    // direzione iniziale verso alto con leggera componente X
+    const dirX = (Math.random()<0.5? -1: 1) * 0.6;
+    const norm = Math.hypot(dirX, -1);
     state.ball = {
-      x: W/2, y: H*0.6,
-      vx: px((Math.random()<0.5?-1:1)*(0.42 + 0.08*level)*devicePixelRatio),
-      vy: px(-0.55*devicePixelRatio - 0.05*level*devicePixelRatio),
-      r: ballR
+      x: state.paddle.x + state.paddle.w/2,
+      y: state.paddle.y - ballR - px(4),
+      vx: baseSpeed * (dirX / norm),
+      vy: baseSpeed * (-1 / norm),
+      r: ballR, speed: baseSpeed
     };
 
     // Bricks
-    const cols = 10, rows = Math.min(6 + level, 10);
-    const margin = px(12*devicePixelRatio), gap = px(6*devicePixelRatio);
-    const totalGapW = gap*(cols-1);
-    const availW = W - margin*2 - totalGapW;
+    const cols = 10, rows = Math.min(6 + level, 12);
+    const marginX = px(14), gap = px(6);
+    const top = px(60);
+    const availW = W - marginX*2 - gap*(cols-1);
     const bw = Math.floor(availW/cols);
-    const bh = px(18*devicePixelRatio);
-    const top = px(60*devicePixelRatio);
+    const bh = px(18);
 
-    state.bricks = [];
+    const bricks = [];
     for(let r=0;r<rows;r++){
       for(let c=0;c<cols;c++){
-        state.bricks.push({
-          x: margin + c*(bw+gap),
+        bricks.push({
+          x: marginX + c*(bw+gap),
           y: top + r*(bh+gap),
           w: bw, h: bh,
-          hp: 1 + Math.floor(r/3), // alcuni più resistenti
-          hue: 200 + r*10
+          hp: 1 + Math.floor(r/4), // più in alto = più duri
+          color: `hsl(${210 + r*9} 80% 60%)`
         });
       }
     }
+    state.bricks = bricks;
   }
 
-  function initOrScale(){
-    const keep = state.score>0 || state.bricks.length>0;
-    if(!keep) initLevel(state.level);
-  }
-
-  // Disegno
+  // === Disegno ===
   function roundRect(x,y,w,h,r){
     const rr = Math.min(r, w/2, h/2);
     ctx.beginPath();
@@ -119,225 +127,253 @@
     ctx.arcTo(x,y,x+w,y,rr);
     ctx.closePath();
   }
-
-  function draw(){
+  function drawBG(){
     const W=state.width,H=state.height;
     ctx.clearRect(0,0,W,H);
-
-    // Glow superiore
-    const g=ctx.createLinearGradient(0,0,0,H*0.4);
+    const g=ctx.createLinearGradient(0,0,0,H*0.45);
     g.addColorStop(0,'rgba(11,95,255,0.25)');
     g.addColorStop(1,'rgba(0,0,0,0)');
-    ctx.fillStyle=g; ctx.fillRect(0,0,W,H*0.4);
-
+    ctx.fillStyle=g; ctx.fillRect(0,0,W,H*0.45);
+  }
+  function draw(){
+    drawBG();
     // Bricks
     for(const b of state.bricks){
       if(b.hp<=0) continue;
-      ctx.fillStyle = `hsl(${b.hue} 80% 55%)`;
-      roundRect(b.x,b.y,b.w,b.h,8*devicePixelRatio);
+      ctx.fillStyle = b.color;
+      roundRect(b.x,b.y,b.w,b.h,8*state.dpr);
       ctx.fill();
-      // bordo
-      ctx.strokeStyle='rgba(255,255,255,0.15)';
-      ctx.lineWidth=Math.max(1,1*devicePixelRatio);
+      ctx.lineWidth = Math.max(1, 1*state.dpr);
+      ctx.strokeStyle = 'rgba(255,255,255,0.12)';
       ctx.stroke();
     }
-
     // Paddle
     const p=state.paddle;
     ctx.fillStyle='#d1e3ff';
-    roundRect(p.x,p.y,p.w,p.h,6*devicePixelRatio);
+    roundRect(p.x,p.y,p.w,p.h,6*state.dpr);
     ctx.fill();
-
     // Ball
     const ball=state.ball;
     const rad = ctx.createRadialGradient(ball.x,ball.y,ball.r*0.1, ball.x,ball.y,ball.r);
     rad.addColorStop(0,'#fff');
     rad.addColorStop(1,'#7fb0ff');
     ctx.fillStyle=rad;
-    ctx.beginPath();
-    ctx.arc(ball.x,ball.y,ball.r,0,Math.PI*2);
-    ctx.fill();
+    ctx.beginPath(); ctx.arc(ball.x,ball.y,ball.r,0,Math.PI*2); ctx.fill();
+
+    // Overlay per stati
+    if(state.gs===GS.MENU || state.gs===GS.PAUSE || state.gs===GS.GAMEOVER){
+      const W=state.width,H=state.height;
+      ctx.fillStyle='rgba(0,0,0,0.35)';
+      ctx.fillRect(0,0,W,H);
+      ctx.fillStyle='#eaeef6';
+      ctx.textAlign='center';
+      ctx.textBaseline='middle';
+      ctx.font = `${Math.round(22*state.dpr)}px system-ui, -apple-system, Segoe UI, Roboto`;
+      const line1 = state.gs===GS.GAMEOVER ? 'GAME OVER' : state.gs===GS.PAUSE ? 'PAUSA' : 'BREAKOUT';
+      ctx.fillText(line1, W/2, H*0.44);
+      ctx.font = `${Math.round(14*state.dpr)}px system-ui, -apple-system, Segoe UI, Roboto`;
+      const line2 = state.gs===GS.MENU ? 'Tocca per iniziare • Trascina nella zona sotto per muovere' :
+                    state.gs===GS.PAUSE ? 'Tocca per continuare' :
+                    'Tocca per ripartire';
+      ctx.fillText(line2, W/2, H*0.52);
+    }
   }
 
-  // Fisica & collisioni
-  function step(dt){
+  // === Fisica ===
+  function step(dt){ // dt in secondi
     const p=state.paddle, b=state.ball, W=state.width, H=state.height;
 
-    // Muovi paddle (inerzia minima)
-    p.x += p.vx * dt;
-    p.x = Math.max(0, Math.min(W - p.w, p.x));
+    // Input tastiera
+    if(state.keyLeft && !state.keyRight){ p.x -= p.speed*dt; }
+    else if(state.keyRight && !state.keyLeft){ p.x += p.speed*dt; }
 
-    // Muovi palla
+    // Input touch (segue il dito)
+    if(state.pointerActive){
+      const targetX = clamp(state.pointerX - p.w/2, 0, W - p.w);
+      // interp lineare per evitare jitter
+      const k = 20; // responsività
+      p.x += clamp((targetX - p.x) * k * dt, -p.speed*dt*1.2, p.speed*dt*1.2);
+    }
+
+    p.x = clamp(p.x, 0, W - p.w);
+
+    // Palla
     b.x += b.vx * dt;
     b.y += b.vy * dt;
 
     // Pareti
-    if(b.x - b.r <= 0){ b.x=b.r; b.vx*=-1; beep(300); }
-    if(b.x + b.r >= W){ b.x=W-b.r; b.vx*=-1; beep(300); }
-    if(b.y - b.r <= 0){ b.y=b.r; b.vy*=-1; beep(500); }
+    if(b.x - b.r <= 0){ b.x = b.r; b.vx *= -1; }
+    if(b.x + b.r >= W){ b.x = W - b.r; b.vx *= -1; }
+    if(b.y - b.r <= 0){ b.y = b.r; b.vy *= -1; }
 
-    // Paddle hit
-    if(b.y + b.r >= p.y && b.y + b.r <= p.y + p.h && b.x >= p.x && b.x <= p.x + p.w && b.vy>0){
+    // Paddle collision
+    if(b.vy>0 && b.y + b.r >= p.y && b.y - b.r <= p.y + p.h && b.x >= p.x && b.x <= p.x + p.w){
       b.y = p.y - b.r;
-      // angolo in base al punto d'impatto
+      // angolo: punto d'impatto -> -60°…+60°
       const hit = ((b.x - (p.x + p.w/2)) / (p.w/2));
-      const speed = Math.hypot(b.vx,b.vy)*1.02;
-      const angle = hit * (Math.PI/3); // ±60°
+      const angle = hit * (Math.PI/3);
+      const speed = Math.hypot(b.vx,b.vy) * 1.015; // leggero aumento
       b.vx = speed * Math.sin(angle);
       b.vy = -Math.abs(speed * Math.cos(angle));
-      beep(800);
     }
 
-    // Mattoni
+    // Mattoni collision (AABB)
     for(const brick of state.bricks){
       if(brick.hp<=0) continue;
       if(b.x + b.r < brick.x || b.x - b.r > brick.x + brick.w ||
          b.y + b.r < brick.y || b.y - b.r > brick.y + brick.h) continue;
 
-      // collisione semplice: inverti l’asse con penetrazione minore
-      const overlapX = (brick.x + brick.w/2) - b.x;
-      const overlapY = (brick.y + brick.h/2) - b.y;
-      const halfW = brick.w/2 + b.r;
-      const halfH = brick.h/2 + b.r;
-      if(Math.abs(overlapX) < halfW && Math.abs(overlapY) < halfH){
-        const penX = halfW - Math.abs(overlapX);
-        const penY = halfH - Math.abs(overlapY);
-        if(penX < penY){ b.vx *= -1; b.x += (overlapX>0? -penX: penX); }
-        else{ b.vy *= -1; b.y += (overlapY>0? -penY: penY); }
-        brick.hp -= 1;
-        state.score += 10;
-        elScore.textContent = state.score;
-        beep(1000);
+      const cx = brick.x + brick.w/2, cy = brick.y + brick.h/2;
+      const dx = b.x - cx, dy = b.y - cy;
+      const px = (brick.w/2 + b.r) - Math.abs(dx);
+      const py = (brick.h/2 + b.r) - Math.abs(dy);
+      if(px < py){ b.vx *= -1; b.x += (dx<0? -px: px); }
+      else{ b.vy *= -1; b.y += (dy<0? -py: py); }
+
+      brick.hp -= 1;
+      state.score += 10;
+      setHUD();
+      if(brick.hp<=0){
+        // piccola chance di velocizzare la palla
+        const boost = 1 + (Math.random()*0.02);
+        b.vx *= boost; b.vy *= boost;
       }
     }
 
     // Fine livello?
-    if(state.bricks.every(b=>b.hp<=0)){
+    if(state.bricks.every(bk=>bk.hp<=0)){
       state.level++;
-      initLevel(state.level);
-      beep(1200,0.08);
-      beep(1400,0.08);
+      setHUD();
+      initLevel(state.level, true);
     }
 
-    // Persa palla?
+    // Palla persa
     if(b.y - b.r > H){
       state.lives--;
-      elLives.textContent = state.lives;
-      beep(200,0.12);
+      setHUD();
       if(state.lives<=0){
-        // game over
-        state.running = false;
-        btnPlayPause.textContent = '▶︎';
-        // salva best
+        // Best
         if(state.score > state.best){
           state.best = state.score;
           localStorage.setItem('brk_best', state.best);
-          elBest.textContent = state.best;
         }
+        state.gs = GS.GAMEOVER;
       }else{
         // re-serve
-        const padMid = state.paddle.x + state.paddle.w/2;
-        state.ball.x = padMid;
-        state.ball.y = state.paddle.y - state.ball.r - 4*devicePixelRatio;
+        state.ball.x = state.paddle.x + state.paddle.w/2;
+        state.ball.y = state.paddle.y - state.ball.r - 4*state.dpr;
         state.ball.vx = (Math.random()<0.5?-1:1) * Math.abs(state.ball.vx);
         state.ball.vy = -Math.abs(state.ball.vy);
       }
     }
   }
 
-  // Game loop
+  // === Loop ===
   function loop(ts){
-    if(!state.running){ draw(); return; }
-    const dt = state.lastTs ? Math.min(32, ts - state.lastTs) : 16;
-    state.lastTs = ts;
+    if(state.gs!==GS.PLAY){ draw(); return; }
+    const t = ts || performance.now();
+    const dtMs = state.lastTs ? (t - state.lastTs) : 16;
+    state.lastTs = t;
+    const dt = Math.min(0.033, dtMs/1000); // clamp a 33ms
     step(dt);
     draw();
     requestAnimationFrame(loop);
   }
 
-  // Controlli touch
-  let dragging = false;
-  function pointerToCanvasX(clientX){
+  // === Input: touch & mouse ===
+  function canvasXFromClient(clientX){
     const rect = cvs.getBoundingClientRect();
-    // scala per hiDPI
-    const x = (clientX - rect.left) * (cvs.width / rect.width);
-    return x;
+    return (clientX - rect.left) * (cvs.width / rect.width);
   }
-  function onTouchStart(e){
-    dragging = true;
-    if(!state.running){ toggleRun(true); }
-    const touch = e.changedTouches[0];
-    const x = pointerToCanvasX(touch.clientX);
-    // centra paddle
-    state.paddle.x = Math.max(0, Math.min(state.width - state.paddle.w, x - state.paddle.w/2));
+  function onTZStart(e){
+    state.pointerActive = true;
+    const t = e.changedTouches[0];
+    state.pointerX = canvasXFromClient(t.clientX);
+    if(state.gs!==GS.PLAY){ startGame(); }
     e.preventDefault();
   }
-  function onTouchMove(e){
-    if(!dragging) return;
-    const touch = e.changedTouches[0];
-    const x = pointerToCanvasX(touch.clientX);
-    const prev = state.paddle.x;
-    state.paddle.x = Math.max(0, Math.min(state.width - state.paddle.w, x - state.paddle.w/2));
-    state.paddle.vx = (state.paddle.x - prev); // per dt pixel/frame
+  function onTZMove(e){
+    if(!state.pointerActive) return;
+    const t = e.changedTouches[0];
+    state.pointerX = canvasXFromClient(t.clientX);
     e.preventDefault();
   }
-  function onTouchEnd(){ dragging = false; state.paddle.vx = 0; }
+  function onTZEnd(){ state.pointerActive = false; }
 
-  zone.addEventListener('touchstart', onTouchStart, {passive:false});
-  zone.addEventListener('touchmove', onTouchMove, {passive:false});
-  zone.addEventListener('touchend', onTouchEnd);
+  zone.addEventListener('touchstart', onTZStart, {passive:false});
+  zone.addEventListener('touchmove', onTZMove, {passive:false});
+  zone.addEventListener('touchend', onTZEnd);
 
-  // Tocco su canvas = pausa/continua
+  // Tocco sul canvas: toggle pausa/gioca
   cvs.addEventListener('touchstart', (e)=>{
     if(e.targetTouches.length===1){
-      toggleRun();
+      if(state.gs===GS.PLAY) pauseGame();
+      else if(state.gs===GS.PAUSE || state.gs===GS.MENU || state.gs===GS.GAMEOVER) startGame(true);
       e.preventDefault();
     }
   }, {passive:false});
 
-  // Tastiera (desktop)
-  let keyLeft=false, keyRight=false;
+  // Mouse (desktop)
+  zone.addEventListener('mousedown', (e)=>{
+    state.pointerActive = true;
+    state.pointerX = canvasXFromClient(e.clientX);
+    if(state.gs!==GS.PLAY) startGame();
+  });
+  zone.addEventListener('mousemove', (e)=>{
+    if(!state.pointerActive) return;
+    state.pointerX = canvasXFromClient(e.clientX);
+  });
+  window.addEventListener('mouseup', ()=>{ state.pointerActive=false; });
+
+  // Tastiera
   window.addEventListener('keydown', e=>{
-    if(e.key==='ArrowLeft') keyLeft=true;
-    if(e.key==='ArrowRight') keyRight=true;
-    if(e.key===' '){ toggleRun(); }
+    if(e.key==='ArrowLeft') state.keyLeft = true;
+    if(e.key==='ArrowRight') state.keyRight = true;
+    if(e.key===' '){ if(state.gs===GS.PLAY) pauseGame(); else startGame(true); }
     if(e.key.toLowerCase()==='r'){ restart(); }
+    if(e.key.toLowerCase()==='f'){ toggleFull(); }
   });
   window.addEventListener('keyup', e=>{
-    if(e.key==='ArrowLeft') keyLeft=false;
-    if(e.key==='ArrowRight') keyRight=false;
+    if(e.key==='ArrowLeft') state.keyLeft = false;
+    if(e.key==='ArrowRight') state.keyRight = false;
   });
-  function pollKeys(){
-    const p=state.paddle;
-    if(keyLeft && !keyRight){ p.vx = -p.speed; p.x += p.vx; }
-    else if(keyRight && !keyLeft){ p.vx = p.speed; p.x += p.vx; }
-    else p.vx = 0;
-    p.x = Math.max(0, Math.min(state.width - p.w, p.x));
-  }
-  setInterval(pollKeys, 16);
 
-  // Bottoni UI
-  function toggleRun(force){
-    if(typeof force==='boolean') state.running = force;
-    else state.running = !state.running;
-    btnPlayPause.textContent = state.running ? '⏸' : '▶︎';
+  // === Bottoni UI ===
+  function startGame(resume=false){
+    if(state.gs===GS.GAMEOVER && !resume){ restart(); return; }
+    state.gs = GS.PLAY;
     state.lastTs = 0;
+    btnPlayPause.textContent = '⏸';
     requestAnimationFrame(loop);
+  }
+  function pauseGame(){
+    state.gs = GS.PAUSE;
+    btnPlayPause.textContent = '▶︎';
+    draw();
   }
   function restart(){
     state.score = 0; state.lives = 3; state.level = 1;
-    elScore.textContent = 0; elLives.textContent = 3;
-    initLevel(1);
-    toggleRun(true);
+    setHUD();
+    initLevel(1, true);
+    startGame();
   }
-  btnPlayPause.addEventListener('click', ()=>toggleRun());
-  btnRestart.addEventListener('click', restart);
-  btnSound.addEventListener('click', ()=>{
-    state.sound = !state.sound;
-    btnSound.textContent = state.sound ? '🔈' : '🔇';
+  function toggleFull(){
+    const el = document.documentElement;
+    if(!document.fullscreenElement){
+      (el.requestFullscreen && el.requestFullscreen()) || (cvs.requestFullscreen && cvs.requestFullscreen());
+    }else{
+      document.exitFullscreen && document.exitFullscreen();
+    }
+  }
+
+  btnPlayPause.addEventListener('click', ()=>{
+    if(state.gs===GS.PLAY) pauseGame(); else startGame(true);
   });
+  btnRestart.addEventListener('click', restart);
+  btnFull.addEventListener('click', toggleFull);
 
   // Avvio
   resize();
+  state.gs = GS.MENU;
   draw();
 })();
