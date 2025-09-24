@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <title>Breakout — pezzaliAPP</title>
+  <meta name="viewport" content="width=device-width,height=device-height,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
+  <meta name="theme-color" content="#0b5fff" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">🎾 Breakout</div>
+    <div class="controls">
+      <button id="btnPlayPause" aria-label="Play/Pause">▶︎</button>
+      <button id="btnRestart" aria-label="Restart">↻</button>
+      <button id="btnSound" aria-label="Sound on/off">🔈</button>
+      <span id="hud">Score: <b id="score">0</b> • Lives: <b id="lives">3</b> • Best: <b id="best">0</b></span>
+    </div>
+  </header>
+
+  <main>
+    <canvas id="game" aria-label="Gioco Breakout" role="img"></canvas>
+    <div id="touchZone" aria-hidden="true"></div>
+  </main>
+
+  <footer class="foot">
+    <details>
+      <summary>Info & comandi</summary>
+      <p>
+        Trascina il dito nella zona grigia per muovere la racchetta. Tocco singolo: pausa/continua.  
+        Tastiera (desktop): ← → per muovere, Spazio: pausa, R: restart.
+      </p>
+      <p class="about">
+        Breakout è un videogioco arcade creato in Atari e pubblicato il <strong>13 maggio 1976</strong>.  
+        Questa è una reinterpretazione moderna per smartphone, con PWA offline.
+      </p>
+    </details>
+    <p class="credits">© 2025 pezzaliAPP — Open source • PWA • Offline-ready</p>
+  </footer>
+
+  <script src="app.js"></script>
+  <script>
+    // Registra il service worker (PWA)
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(console.warn);
+      });
+    }
+  </script>
+</body>
+</html>
