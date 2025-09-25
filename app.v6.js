@@ -262,21 +262,15 @@
       else{ b.vy *= -1; b.y += (dy<0? -py: py); }
 
       brick.hp -= 1;
-state.score += 10;
+      state.score += 10;
+      setHUD();
+      if(brick.hp<=0){
+        // piccola chance di velocizzare la palla
+        const boost = 1 + (Math.random()*0.008);
+        b.vx *= boost; b.vy *= boost;
+      }
+    }
 
-// BONUS se era il mattone speciale (face)
-if (brick.hp <= 0 && brick.special) {
-  state.score += 100; // +100 punti extra
-}
-
-setHUD();
-
-if (brick.hp <= 0) {
-  // piccola chance di velocizzare la palla
-  const boost = 1 + (Math.random() * 0.008);
-  b.vx *= boost;
-  b.vy *= boost;
-}
     // Fine livello?
     if(state.bricks.every(bk=>bk.hp<=0)){
       state.level++;
